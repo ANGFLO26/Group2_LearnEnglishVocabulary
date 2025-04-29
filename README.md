@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Learning Application
 
 A web application for learning vocabulary and taking tests.
@@ -117,3 +118,7 @@ mypy .
 ## License
 
 MIT 
+=======
+# Group2_LearnEnglishVocabulary
+spring2025
+>>>>>>> 0091c2926d70f790d30ca937750b355ff1d56b0b
