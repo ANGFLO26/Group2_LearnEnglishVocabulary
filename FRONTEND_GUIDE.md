@@ -33,6 +33,8 @@ frontend/
 │   ├── redux/             # Redux store, slices
 │   ├── routes/            # Route configurations
 │   ├── types/             # TypeScript types/interfaces
+│   │   ├── vocabulary.d.ts # Type definitions for vocabulary features
+│   │   └── ...           # Other type definitions
 │   ├── utils/             # Utility functions
 │   └── App.tsx            # Root component
 ```
@@ -72,15 +74,15 @@ const authSlice = createSlice({
 ### 2. Vocabulary Management (features/vocabulary)
 
 #### Components
-- `TopicList`: Danh sách chủ đề
-- `TopicDetail`: Chi tiết chủ đề
+- `VocabularyTopicList`: Danh sách chủ đề từ vựng
+- `VocabularyTopicDetail`: Chi tiết chủ đề từ vựng
 - `VocabularyList`: Danh sách từ vựng
 - `VocabularyCard`: Card hiển thị từ vựng
 - `AddVocabularyForm`: Form thêm từ mới
 
 #### Data Structure
 ```typescript
-interface Topic {
+interface VocabularyTopic {
   id: number;
   name: string;
   description: string;
@@ -106,7 +108,7 @@ interface Vocabulary {
 - `QuizHistory`: Lịch sử làm quiz
 
 #### Quiz Flow
-1. Chọn chủ đề
+1. Chọn chủ đề từ vựng
 2. Cấu hình quiz (số câu hỏi, thời gian)
 3. Làm quiz
 4. Hiển thị kết quả
@@ -184,10 +186,10 @@ Response:
 }
 ```
 
-#### 2. Topic APIs
+#### 2. Vocabulary Topic APIs
 
 ```typescript
-// Topics
+// Vocabulary Topics
 GET /api/learning/topics
 Response:
 {
@@ -195,7 +197,6 @@ Response:
     id: number,
     name: string,
     description: string,
-    created_by: number,
     created_at: string,
     total_vocabularies: number
   }>
@@ -207,13 +208,12 @@ Response:
   id: number,
   name: string,
   description: string,
-  created_by: number,
   created_at: string,
   vocabularies: Array<{
     id: number,
     word: string,
     meaning: string,
-    example: string
+    phonetic: string
   }>
 }
 
@@ -228,7 +228,6 @@ Response:
   id: number,
   name: string,
   description: string,
-  created_by: number,
   created_at: string
 }
 ```
@@ -236,16 +235,15 @@ Response:
 #### 3. Vocabulary APIs
 
 ```typescript
-// Vocabularies
 GET /api/learning/topics/:topicId/vocabularies
 Response:
 {
   vocabularies: Array<{
     id: number,
+    topic_id: number,
     word: string,
     meaning: string,
-    example: string,
-    topic_id: number
+    phonetic: string
   }>
 }
 
@@ -254,36 +252,29 @@ Request:
 {
   word: string,
   meaning: string,
-  example: string
+  phonetic: string
 }
 Response:
 {
   id: number,
+  topic_id: number,
   word: string,
   meaning: string,
-  example: string,
-  topic_id: number
+  phonetic: string
 }
 ```
 
 #### 4. Quiz APIs
 
 ```typescript
-// Quiz
 POST /api/learning/topics/:topicId/quiz/start
-Request:
-{
-  total_questions: number,
-  time_limit?: number
-}
 Response:
 {
   quiz_id: number,
   questions: Array<{
     id: number,
-    word: string,
-    options: Array<string>,
-    correct_answer: string
+    question: string,
+    options: string[]
   }>
 }
 
@@ -291,26 +282,23 @@ POST /api/learning/topics/:topicId/quiz/submit
 Request:
 {
   quiz_id: number,
-  answers: Array<{
-    question_id: number,
-    answer: string
-  }>,
+  answers: {
+    [question_id: number]: string
+  },
   completion_time: number
 }
 Response:
 {
   score: number,
-  total_questions: number,
   correct_answers: number,
-  completion_time: number,
-  leaderboard_updated: boolean
+  total_questions: number,
+  completion_time: number
 }
 ```
 
 #### 5. Leaderboard APIs
 
 ```typescript
-// Leaderboard
 GET /api/learning/topics/:topicId/leaderboard
 Response:
 {
@@ -327,8 +315,6 @@ Response:
 GET /api/learning/topics/:topicId/rank
 Response:
 {
-  user_id: number,
-  username: string,
   rank: number,
   total_score: number,
   tests_completed: number,
@@ -336,8 +322,6 @@ Response:
 }
 
 GET /api/learning/topics/:topicId/top-users
-Query Parameters:
-  limit?: number (default: 10)
 Response:
 {
   users: Array<{
@@ -351,87 +335,64 @@ Response:
 }
 ```
 
-### Error Responses
+## Redux Store Structure
 
 ```typescript
-// Common error response format
-{
-  error: string,
-  status: number,
-  details?: any
+interface RootState {
+  auth: AuthState;
+  vocabularyTopics: {
+    topics: VocabularyTopic[];
+    currentTopic: VocabularyTopic | null;
+    isLoading: boolean;
+    error: string | null;
+  };
+  vocabularies: {
+    items: Vocabulary[];
+    isLoading: boolean;
+    error: string | null;
+  };
+  quiz: {
+    currentQuiz: Quiz | null;
+    results: QuizResult[];
+    isLoading: boolean;
+    error: string | null;
+  };
+  leaderboard: {
+    rankings: LeaderboardEntry[];
+    userRank: UserRank | null;
+    isLoading: boolean;
+    error: string | null;
+  };
 }
-
-// Common HTTP status codes
-400: Bad Request - Invalid input data
-401: Unauthorized - Authentication required
-403: Forbidden - Insufficient permissions
-404: Not Found - Resource not found
-500: Internal Server Error - Server-side error
 ```
 
-### Authentication Flow
-
-1. **Token Storage**:
-```typescript
-// Store token after login
-localStorage.setItem('token', response.data.token);
-
-// Remove token on logout
-localStorage.removeItem('token');
-```
-
-2. **Protected Routes**:
-```typescript
-// routes/PrivateRoute.tsx
-import { Navigate } from 'react-router-dom';
-
-const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/auth/login" />;
-};
-```
-
-3. **API Call Example**:
-```typescript
-// api/topics.ts
-import api from './axios';
-
-export const getTopics = async () => {
-  try {
-    const response = await api.get('/learning/topics');
-    return response.data;
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-```
-
-## Routing
+## Routing Configuration
 
 ```typescript
-// routes/index.tsx
+// src/routes/index.tsx
 const routes = [
   {
     path: '/',
     element: <MainLayout />,
     children: [
       { path: '/', element: <Home /> },
-      { path: '/topics', element: <TopicList /> },
-      { path: '/topics/:id', element: <TopicDetail /> },
+      { path: '/topics', element: <VocabularyTopicList /> },
+      { path: '/topics/:id', element: <VocabularyTopicDetail /> },
       { path: '/quiz', element: <QuizStart /> },
       { path: '/quiz/:id', element: <QuizQuestion /> },
-      { path: '/leaderboard', element: <Leaderboard /> },
-      { path: '/profile', element: <Profile /> },
-    ],
+      { path: '/leaderboard', element: <LeaderboardTable /> },
+      { path: '/profile', element: <UserProfile /> }
+    ]
   },
   {
     path: '/auth',
     element: <AuthLayout />,
     children: [
-      { path: 'login', element: <Login /> },
-      { path: 'register', element: <Register /> },
-    ],
-  },
+      { path: 'login', element: <LoginForm /> },
+      { path: 'register', element: <RegisterForm /> },
+      { path: 'forgot-password', element: <ForgotPassword /> }
+    ]
+  }
 ];
 ```
 

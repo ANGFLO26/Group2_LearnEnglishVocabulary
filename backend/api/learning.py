@@ -1,16 +1,16 @@
 from flask import Blueprint, request, jsonify, session
 from backend.business_layer.services.user_service import UserService
-from backend.business_layer.services.topic_service import TopicService
+from backend.business_layer.services.vocabulary_topics_service import VocabularyTopicService
 from backend.business_layer.services.vocabulary_service import VocabularyService
 from backend.business_layer.services.test_service import TestService
 from backend.business_layer.services.test_result_service import TestResultService
 from backend.business_layer.services.leaderboard_service import LeaderboardService
 from backend.dao.users.user_dao import UserDAO
-from backend.dao.topics.topic_dao import TopicDAO
 from backend.dao.vocabularies.vocabulary_dao import VocabularyDAO
 from backend.dao.tests.test_dao import TestDAO
 from backend.dao.test_results.test_result_dao import TestResultDAO
 from backend.dao.leaderboards.leaderboard_dao import LeaderboardDAO
+from backend.dao.vocabulary_topics.vocabulary_topic_dao import VocabularyTopicDAO
 from backend.utils.exceptions import (
     ValidationError, AuthenticationError, AuthorizationError,
     ResourceNotFoundError, DatabaseError, ServiceError
@@ -144,23 +144,27 @@ def login():
 @login_required
 def get_topics():
     try:
-        topic_service = TopicService(TopicDAO())
+        topic_service = VocabularyTopicService(VocabularyTopicDAO())
         topics = topic_service.get_all_topics()
         return jsonify([topic.to_dict() for topic in topics]), 200
     except Exception as e:
         logger.error(f"Failed to get topics: {str(e)}")
-        raise
+        return jsonify({'error': str(e)}), 500
 
 @learning_bp.route('/topics/<int:topic_id>', methods=['GET'])
 @login_required
 def get_topic(topic_id):
-    topic_service = TopicService(TopicDAO())
-    topic = topic_service.get_topic_by_id(topic_id)
-    
-    if not topic:
-        return jsonify({'error': 'Topic not found'}), 404
+    try:
+        topic_service = VocabularyTopicService(VocabularyTopicDAO())
+        topic = topic_service.get_topic_by_id(topic_id)
         
-    return jsonify(topic.to_dict()), 200
+        if not topic:
+            return jsonify({'error': 'Topic not found'}), 404
+            
+        return jsonify(topic.to_dict()), 200
+    except Exception as e:
+        logger.error(f"Failed to get topic: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 # Vocabulary APIs
 @learning_bp.route('/topics/<int:topic_id>/vocabularies', methods=['GET'])

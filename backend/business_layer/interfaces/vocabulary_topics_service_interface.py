@@ -1,22 +1,22 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from backend.dao.topics.topic_class import Topic
+from backend.dao.vocabulary_topics.vocabulary_topic_class import VocabularyTopic
 
-class ITopicService(ABC):
-    """Interface for Topic Service"""
+class IVocabularyTopicService(ABC):
+    """Interface for VocabularyTopic Service"""
     
     @abstractmethod
-    def get_all_topics(self) -> List[Topic]:
+    def get_all_topics(self) -> List[VocabularyTopic]:
         """Get all topics"""
         pass
         
     @abstractmethod
-    def get_topic_by_id(self, topic_id: int) -> Optional[Topic]:
+    def get_topic_by_id(self, topic_id: int) -> Optional[VocabularyTopic]:
         """Get topic by ID"""
         pass
         
     @abstractmethod
-    def create_topic(self, name: str, description: str) -> Optional[Topic]:
+    def create_topic(self, name: str, description: str) -> Optional[VocabularyTopic]:
         """Create a new topic"""
         pass
         
@@ -31,6 +31,6 @@ class ITopicService(ABC):
         pass
         
     @abstractmethod
-    def get_topics_by_user(self, user_id: int) -> List[Topic]:
+    def get_topics_by_user(self, user_id: int) -> List[VocabularyTopic]:
         """Get topics created by a user"""
         pass 
