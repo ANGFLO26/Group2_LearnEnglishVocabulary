@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, make_response
 from functools import wraps
 from backend.business_layer.services.user_service import UserService
 from backend.dao.users.user_dao import UserDAO
@@ -86,7 +86,8 @@ def login():
         session['username'] = user['username']
         
         logger.info(f"User logged in successfully: {data['username']}")
-        return jsonify(result), 200
+        response = make_response(jsonify(result), 200)
+        return response
         
     except ValidationError as e:
         logger.warning(f"Login validation failed: {str(e)}")
